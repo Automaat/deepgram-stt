@@ -4,8 +4,8 @@
   "codeowners": ["@Automaat"],
   "config_flow": true,
   "documentation": "https://github.com/Automaat/deepgram-stt",
-  "issue_tracker": "https://github.com/Automaat/deepgram-stt/issues",
   "iot_class": "cloud_push",
+  "issue_tracker": "https://github.com/Automaat/deepgram-stt/issues",
   "requirements": ["deepgram-sdk==5.3.1"],
   "version": "0.0.1"
 }
