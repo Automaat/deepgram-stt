@@ -1,0 +1,23 @@
+{
+  "title": "Deepgram STT",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configure Deepgram STT",
+        "description": "Enter your Deepgram API credentials",
+        "data": {
+          "api_key": "API Key",
+          "model": "Model",
+          "language": "Language"
+        }
+      }
+    },
+    "error": {
+      "invalid_api_key": "Invalid API key (must be at least 10 characters)",
+      "unknown": "Unexpected error occurred"
+    },
+    "abort": {
+      "already_configured": "Deepgram STT is already configured"
+    }
+  }
+}
