@@ -38,7 +38,4 @@ ruff format . --check
 log_header "Checking code with Ruff"
 ruff check .
 
-# Clean up any accidental package installation from uv run
-"$SCRIPT_DIR/clean" --minimal
-
 log_success "Linting check completed"
