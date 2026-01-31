@@ -1,11 +1,15 @@
 {
   "domain": "deepgram_stt",
   "name": "Deepgram Speech-to-Text",
-  "codeowners": ["@Automaat"],
+  "codeowners": [
+    "@Automaat"
+  ],
   "config_flow": true,
   "documentation": "https://github.com/Automaat/deepgram-stt",
   "iot_class": "cloud_push",
   "issue_tracker": "https://github.com/Automaat/deepgram-stt/issues",
-  "requirements": ["deepgram-sdk==5.3.1"],
+  "requirements": [
+    "deepgram-sdk==5.3.1"
+  ],
   "version": "0.0.1"
 }
