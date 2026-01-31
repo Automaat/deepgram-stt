@@ -63,6 +63,21 @@ class DeepgramSTTEntity(SpeechToTextEntity):
         self._attr_device_info = None  # No physical device for cloud API
 
     @property
+    def api_key(self) -> str:
+        """Return configured API key."""
+        return self._api_key
+
+    @property
+    def model(self) -> str:
+        """Return configured model."""
+        return self._model
+
+    @property
+    def language(self) -> str:
+        """Return configured language."""
+        return self._language
+
+    @property
     def supported_languages(self) -> list[str]:
         """Return supported languages."""
         return ["pl", "en", "de", "es", "fr", "it", "nl", "pt"]

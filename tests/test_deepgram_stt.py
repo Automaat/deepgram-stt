@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import asyncio
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from deepgram import AsyncDeepgramClient
+from deepgram.core.events import EventType
 import pytest
 
 from custom_components.deepgram_stt.config_flow import ConfigFlow
@@ -60,9 +61,9 @@ class TestDeepgramSTTEntity:
 
         assert entity.name == "Deepgram STT"
         assert entity.unique_id == "deepgram_stt"
-        assert entity._api_key == "test_api_key_12345"
-        assert entity._model == DEFAULT_MODEL
-        assert entity._language == DEFAULT_LANGUAGE
+        assert entity.api_key == "test_api_key_12345"
+        assert entity.model == DEFAULT_MODEL
+        assert entity.language == DEFAULT_LANGUAGE
         assert entity.device_info is None
 
     def test_supported_languages(self, mock_config_entry):
@@ -362,11 +363,7 @@ class TestDeepgramSDKCompatibility:
 
     def test_sdk_v5_imports_available(self):
         """Test that required SDK v5 imports are available."""
-        # This catches import errors at test time instead of runtime
-        from deepgram import AsyncDeepgramClient
-        from deepgram.core.events import EventType
-
-        # Verify classes are importable
+        # Verify classes are importable (imported at module level)
         assert AsyncDeepgramClient is not None
         assert EventType is not None
 
@@ -374,11 +371,9 @@ class TestDeepgramSDKCompatibility:
     async def test_real_sdk_connection_api_compatibility(self):
         """Integration test: verify real SDK has expected v5 API.
 
-        This test imports the actual Deepgram SDK and verifies the connection
-        object has the methods we expect, catching SDK breaking changes.
+        Verifies the connection object has the methods we expect,
+        catching SDK breaking changes.
         """
-        from deepgram import AsyncDeepgramClient
-
         # Create real client (no API call, just object creation)
         client = AsyncDeepgramClient(api_key="test_key_for_compatibility_check")
 
