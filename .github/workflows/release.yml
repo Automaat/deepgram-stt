@@ -4,14 +4,18 @@ on:
   workflow_dispatch:
     inputs:
       version_bump:
-        description: 'Version bump type'
-        required: true
+        description: 'Version bump type (ignored if manual_version is set)'
+        required: false
         default: 'minor'
         type: choice
         options:
           - patch
           - minor
           - major
+      manual_version:
+        description: 'Manual version (e.g., 1.2.3) - overrides version_bump'
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -36,25 +40,36 @@ jobs:
       - name: Bump version
         id: bump_version
         run: |
-          CURRENT="${{ steps.current_version.outputs.version }}"
-          IFS='.' read -r major minor patch <<< "$CURRENT"
+          MANUAL_VERSION="${{ inputs.manual_version }}"
 
-          case "${{ inputs.version_bump }}" in
-            major)
-              major=$((major + 1))
-              minor=0
-              patch=0
-              ;;
-            minor)
-              minor=$((minor + 1))
-              patch=0
-              ;;
-            patch)
-              patch=$((patch + 1))
-              ;;
-          esac
+          if [ -n "$MANUAL_VERSION" ]; then
+            # Use manual version if provided
+            echo "Using manual version: $MANUAL_VERSION"
+            NEW_VERSION="$MANUAL_VERSION"
+          else
+            # Auto-bump based on bump type
+            CURRENT="${{ steps.current_version.outputs.version }}"
+            IFS='.' read -r major minor patch <<< "$CURRENT"
 
-          NEW_VERSION="${major}.${minor}.${patch}"
+            case "${{ inputs.version_bump }}" in
+              major)
+                major=$((major + 1))
+                minor=0
+                patch=0
+                ;;
+              minor)
+                minor=$((minor + 1))
+                patch=0
+                ;;
+              patch)
+                patch=$((patch + 1))
+                ;;
+            esac
+
+            NEW_VERSION="${major}.${minor}.${patch}"
+            echo "Auto-bumped version: $NEW_VERSION"
+          fi
+
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "New version: $NEW_VERSION"
 
