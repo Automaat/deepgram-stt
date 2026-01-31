@@ -90,9 +90,7 @@ class DeepgramSTTEntity(SpeechToTextEntity):
         """Return supported audio channels."""
         return [AudioChannels.CHANNEL_MONO]
 
-    async def async_process_audio_stream(
-        self, metadata: SpeechMetadata, stream: asyncio.StreamReader
-    ) -> SpeechResult:
+    async def async_process_audio_stream(self, metadata: SpeechMetadata, stream: asyncio.StreamReader) -> SpeechResult:
         """Process audio stream with Deepgram."""
         if not self._api_key:
             _LOGGER.error("Deepgram API key not configured")

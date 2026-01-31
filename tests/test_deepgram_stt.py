@@ -122,9 +122,11 @@ class TestDeepgramSTTAudioProcessing:
     @pytest.fixture
     def mock_stream(self):
         """Mock audio stream as async generator."""
+
         async def stream_generator():
             yield b"audio_chunk_1"
             yield b"audio_chunk_2"
+
         return stream_generator()
 
     @pytest.fixture
@@ -143,9 +145,7 @@ class TestDeepgramSTTAudioProcessing:
     # Coverage achieved through other tests: connection failure, no API key, empty transcript, exceptions
 
     @pytest.mark.asyncio
-    async def test_process_audio_stream_no_api_key(
-        self, mock_config_entry, mock_stream, mock_metadata
-    ):
+    async def test_process_audio_stream_no_api_key(self, mock_config_entry, mock_stream, mock_metadata):
         """Test audio processing fails without API key."""
         mock_config_entry.data = {CONF_API_KEY: None}
         entity = DeepgramSTTEntity(mock_config_entry)
@@ -156,9 +156,7 @@ class TestDeepgramSTTAudioProcessing:
         assert result.result == SpeechResultState.ERROR
 
     @pytest.mark.asyncio
-    async def test_process_audio_stream_connection_fails(
-        self, mock_config_entry, mock_stream, mock_metadata
-    ):
+    async def test_process_audio_stream_connection_fails(self, mock_config_entry, mock_stream, mock_metadata):
         """Test audio processing handles connection failure."""
         entity = DeepgramSTTEntity(mock_config_entry)
 
@@ -182,9 +180,7 @@ class TestDeepgramSTTAudioProcessing:
             assert result.result == SpeechResultState.ERROR
 
     @pytest.mark.asyncio
-    async def test_process_audio_stream_exception(
-        self, mock_config_entry, mock_stream, mock_metadata
-    ):
+    async def test_process_audio_stream_exception(self, mock_config_entry, mock_stream, mock_metadata):
         """Test audio processing handles exceptions."""
         entity = DeepgramSTTEntity(mock_config_entry)
 
@@ -198,9 +194,7 @@ class TestDeepgramSTTAudioProcessing:
             assert result.result == SpeechResultState.ERROR
 
     @pytest.mark.asyncio
-    async def test_process_audio_stream_empty_transcript(
-        self, mock_config_entry, mock_stream, mock_metadata
-    ):
+    async def test_process_audio_stream_empty_transcript(self, mock_config_entry, mock_stream, mock_metadata):
         """Test audio processing handles empty transcript."""
         entity = DeepgramSTTEntity(mock_config_entry)
 
@@ -246,9 +240,7 @@ class TestDeepgramSTTConfigFlow:
         # Submit form with valid API key
         with patch.object(flow, "async_set_unique_id"):
             with patch.object(flow, "_abort_if_unique_id_configured"):
-                result = await flow.async_step_user(
-                    {CONF_API_KEY: "valid_api_key_123"}
-                )
+                result = await flow.async_step_user({CONF_API_KEY: "valid_api_key_123"})
 
         assert result["type"] == "create_entry"
         assert result["title"] == "Deepgram STT"
@@ -274,9 +266,7 @@ class TestDeepgramSTTConfigFlow:
 
         with patch.object(flow, "async_set_unique_id"):
             with patch.object(flow, "_abort_if_unique_id_configured"):
-                result = await flow.async_step_import(
-                    {CONF_API_KEY: "imported_api_key_123"}
-                )
+                result = await flow.async_step_import({CONF_API_KEY: "imported_api_key_123"})
 
         assert result["type"] == "create_entry"
         assert result["title"] == "Deepgram STT"
@@ -332,9 +322,7 @@ class TestDeepgramSTTIntegrationSetup:
         """Test STT platform setup from config entry."""
         mock_add_entities = AsyncMock()
 
-        await async_setup_platform_entry(
-            mock_hass, mock_config_entry, mock_add_entities
-        )
+        await async_setup_platform_entry(mock_hass, mock_config_entry, mock_add_entities)
 
         mock_add_entities.assert_called_once()
         entities = mock_add_entities.call_args[0][0]
@@ -363,6 +351,7 @@ class TestDeepgramSTTEventHandlers:
             # Async generator that yields nothing
             if False:
                 yield b""
+
         mock_stream = empty_stream()
 
         # Mock connection with async context manager
@@ -389,16 +378,15 @@ class TestDeepgramSTTEventHandlers:
         mock_client = AsyncMock()
         mock_client.listen = mock_listen
 
-        with patch("custom_components.deepgram_stt.stt.AsyncDeepgramClient", return_value=mock_client), \
-             patch("custom_components.deepgram_stt.stt.EventType") as mock_event_type:
-
+        with (
+            patch("custom_components.deepgram_stt.stt.AsyncDeepgramClient", return_value=mock_client),
+            patch("custom_components.deepgram_stt.stt.EventType") as mock_event_type,
+        ):
             # Set up event types
             mock_event_type.MESSAGE = "MESSAGE"
             mock_event_type.ERROR = "ERROR"
 
-            task = asyncio.create_task(
-                entity.async_process_audio_stream(mock_metadata, mock_stream)
-            )
+            task = asyncio.create_task(entity.async_process_audio_stream(mock_metadata, mock_stream))
 
             # Allow task to initialize and register handlers
             # Note: Event-based sync attempted but unreliable with complex SDK mocking
@@ -444,5 +432,5 @@ class TestDeepgramSDKCompatibility:
         client = AsyncDeepgramClient(api_key="test_key_for_compatibility_check")
 
         # Verify listen.v1 exists
-        assert hasattr(client, 'listen')
-        assert hasattr(client.listen, 'v1')
+        assert hasattr(client, "listen")
+        assert hasattr(client.listen, "v1")
