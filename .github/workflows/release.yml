@@ -1,0 +1,146 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: true
+        default: 'minor'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Get current version
+        id: current_version
+        run: |
+          VERSION=$(jq -r '.version' custom_components/deepgram_stt/manifest.json)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $VERSION"
+
+      - name: Bump version
+        id: bump_version
+        run: |
+          CURRENT="${{ steps.current_version.outputs.version }}"
+          IFS='.' read -r major minor patch <<< "$CURRENT"
+
+          case "${{ inputs.version_bump }}" in
+            major)
+              major=$((major + 1))
+              minor=0
+              patch=0
+              ;;
+            minor)
+              minor=$((minor + 1))
+              patch=0
+              ;;
+            patch)
+              patch=$((patch + 1))
+              ;;
+          esac
+
+          NEW_VERSION="${major}.${minor}.${patch}"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
+
+      - name: Update manifest.json
+        run: |
+          jq '.version = "${{ steps.bump_version.outputs.new_version }}"' \
+            custom_components/deepgram_stt/manifest.json > manifest.tmp
+          mv manifest.tmp custom_components/deepgram_stt/manifest.json
+          cat custom_components/deepgram_stt/manifest.json
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add custom_components/deepgram_stt/manifest.json
+          git commit -s -m "chore: bump version to ${{ steps.bump_version.outputs.new_version }}"
+          git push
+
+      - name: Create tag
+        run: |
+          git tag -a "v${{ steps.bump_version.outputs.new_version }}" \
+            -m "Release v${{ steps.bump_version.outputs.new_version }}"
+          git push origin "v${{ steps.bump_version.outputs.new_version }}"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -z "$PREV_TAG" ]; then
+            echo "First release - generating initial changelog"
+            CHANGELOG="Initial release of Deepgram STT integration"
+          else
+            echo "Generating changelog from $PREV_TAG to HEAD"
+            CHANGELOG=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s" --no-merges | grep -v "^- chore: bump version" || echo "- Minor improvements and bug fixes")
+          fi
+
+          # Save to file for gh release
+          cat > changelog.md <<EOF
+          ## What's Changed
+
+          ${CHANGELOG}
+
+          ## Installation
+
+          ### HACS (Recommended)
+          1. Open HACS in Home Assistant
+          2. Go to Integrations
+          3. Click three dots → Custom repositories
+          4. Add: \`https://github.com/Automaat/deepgram-stt\`
+          5. Category: Integration
+          6. Search for "Deepgram Speech-to-Text"
+          7. Click Download
+          8. Restart Home Assistant
+
+          ### Manual Installation
+          1. Download \`deepgram_stt.zip\` from release assets
+          2. Extract to \`config/custom_components/\`
+          3. Restart Home Assistant
+
+          ## Configuration
+          1. Go to Settings → Devices & Services
+          2. Click Add Integration
+          3. Search for "Deepgram Speech-to-Text"
+          4. Enter your Deepgram API key from https://console.deepgram.com/
+          5. Configure in Voice Assistants settings
+          EOF
+
+      - name: Create release archive
+        run: |
+          cd custom_components
+          zip -r ../deepgram_stt.zip deepgram_stt/
+          cd ..
+          ls -lh deepgram_stt.zip
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ steps.bump_version.outputs.new_version }}" \
+            --title "v${{ steps.bump_version.outputs.new_version }}" \
+            --notes-file changelog.md \
+            deepgram_stt.zip
+
+      - name: Summary
+        run: |
+          echo "## Release Created! 🎉" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** v${{ steps.bump_version.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Release URL:** https://github.com/${{ github.repository }}/releases/tag/v${{ steps.bump_version.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
