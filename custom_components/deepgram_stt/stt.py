@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 
 from deepgram import AsyncDeepgramClient
 from deepgram.core.events import EventType
 from deepgram.listen.v1 import ListenV1CloseStream
+
 from homeassistant.components.stt import (
     AudioBitRates,
     AudioChannels,
@@ -186,17 +188,15 @@ class DeepgramSTTEntity(SpeechToTextEntity):
                             break
                         await asyncio.sleep(0.1)
 
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     _LOGGER.error("Error streaming audio: %s", e)
                     return SpeechResult("", SpeechResultState.ERROR)
                 finally:
                     # Cancel listening task if still running
                     if not listen_task.done():
                         listen_task.cancel()
-                        try:
+                        with contextlib.suppress(asyncio.CancelledError):
                             await listen_task
-                        except asyncio.CancelledError:
-                            pass
 
             # Return result (connection auto-closed by context manager)
             async with state_lock:
@@ -212,6 +212,6 @@ class DeepgramSTTEntity(SpeechToTextEntity):
             _LOGGER.info("Transcription result: %s", result_text)
             return SpeechResult(result_text, SpeechResultState.SUCCESS)
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             _LOGGER.error("Deepgram transcription failed: %s", e)
             return SpeechResult("", SpeechResultState.ERROR)

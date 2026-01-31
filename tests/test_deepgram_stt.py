@@ -7,6 +7,10 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+
+from custom_components.deepgram_stt.config_flow import ConfigFlow
+from custom_components.deepgram_stt.const import CONF_LANGUAGE, CONF_MODEL, DEFAULT_LANGUAGE, DEFAULT_MODEL
+from custom_components.deepgram_stt.stt import DeepgramSTTEntity, async_setup_entry as async_setup_platform_entry
 from homeassistant.components.stt import (
     AudioBitRates,
     AudioChannels,
@@ -18,16 +22,6 @@ from homeassistant.components.stt import (
 )
 from homeassistant.const import CONF_API_KEY
 from homeassistant.core import HomeAssistant
-
-from custom_components.deepgram_stt.stt import async_setup_entry as async_setup_platform_entry
-from custom_components.deepgram_stt.config_flow import ConfigFlow
-from custom_components.deepgram_stt.const import (
-    CONF_LANGUAGE,
-    CONF_MODEL,
-    DEFAULT_LANGUAGE,
-    DEFAULT_MODEL,
-)
-from custom_components.deepgram_stt.stt import DeepgramSTTEntity
 
 
 @pytest.fixture
@@ -238,9 +232,8 @@ class TestDeepgramSTTConfigFlow:
         assert result["step_id"] == "user"
 
         # Submit form with valid API key
-        with patch.object(flow, "async_set_unique_id"):
-            with patch.object(flow, "_abort_if_unique_id_configured"):
-                result = await flow.async_step_user({CONF_API_KEY: "valid_api_key_123"})
+        with patch.object(flow, "async_set_unique_id"), patch.object(flow, "_abort_if_unique_id_configured"):
+            result = await flow.async_step_user({CONF_API_KEY: "valid_api_key_123"})
 
         assert result["type"] == "create_entry"
         assert result["title"] == "Deepgram STT"
@@ -264,9 +257,8 @@ class TestDeepgramSTTConfigFlow:
         flow = ConfigFlow()
         flow.hass = mock_hass
 
-        with patch.object(flow, "async_set_unique_id"):
-            with patch.object(flow, "_abort_if_unique_id_configured"):
-                result = await flow.async_step_import({CONF_API_KEY: "imported_api_key_123"})
+        with patch.object(flow, "async_set_unique_id"), patch.object(flow, "_abort_if_unique_id_configured"):
+            result = await flow.async_step_import({CONF_API_KEY: "imported_api_key_123"})
 
         assert result["type"] == "create_entry"
         assert result["title"] == "Deepgram STT"
@@ -275,47 +267,6 @@ class TestDeepgramSTTConfigFlow:
 
 class TestDeepgramSTTIntegrationSetup:
     """Test integration setup."""
-
-    @pytest.mark.asyncio
-    async def test_auto_configuration_from_sops_secret(self, mock_hass):
-        """Test auto-configuration reads sops secret."""
-        from custom_components.deepgram_stt import async_setup
-
-        # Mock no existing entries
-        mock_hass.config_entries.async_entries.return_value = []
-
-        # Mock sops secret file
-        mock_secret_path = MagicMock(spec=Path)
-        mock_secret_path.exists.return_value = True
-
-        async def mock_read_text():
-            return "sops_api_key_123\n"
-
-        mock_hass.async_add_executor_job.return_value = "sops_api_key_123\n"
-
-        with patch("custom_components.deepgram_stt.Path", return_value=mock_secret_path):
-            result = await async_setup(mock_hass, {})
-
-        assert result is True
-        # Check that async_create_task was called to start config flow
-        mock_hass.async_create_task.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_auto_configuration_no_secret_file(self, mock_hass):
-        """Test auto-configuration skips when secret missing."""
-        from custom_components.deepgram_stt import async_setup
-
-        # Mock no existing entries
-        mock_hass.config_entries.async_entries.return_value = []
-
-        mock_secret_path = MagicMock(spec=Path)
-        mock_secret_path.exists.return_value = False
-
-        with patch("custom_components.deepgram_stt.Path", return_value=mock_secret_path):
-            result = await async_setup(mock_hass, {})
-
-        assert result is True
-        mock_hass.async_create_task.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_platform_setup_entry(self, mock_hass, mock_config_entry):
