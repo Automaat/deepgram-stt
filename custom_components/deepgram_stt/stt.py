@@ -8,7 +8,7 @@ import logging
 
 from deepgram import AsyncDeepgramClient
 from deepgram.core.events import EventType
-from deepgram.listen.v1 import ListenV1CloseStream
+from deepgram.extensions.types.sockets import ListenV1ControlMessage
 
 from homeassistant.components.stt import (
     AudioBitRates,
@@ -189,7 +189,7 @@ class DeepgramSTTEntity(SpeechToTextEntity):
                     _LOGGER.debug("Audio streaming complete: %d chunks, %d bytes total", chunk_count, total_bytes)
 
                     # Send close stream signal to finalize transcription
-                    await dg_connection.send_close_stream(ListenV1CloseStream(type="CloseStream"))
+                    await dg_connection.send_close_stream(ListenV1ControlMessage(type="CloseStream"))
                     _LOGGER.debug("Sent CloseStream signal to Deepgram")
 
                     # Wait for final transcript (with timeout)
