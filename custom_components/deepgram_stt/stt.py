@@ -189,7 +189,7 @@ class DeepgramSTTEntity(SpeechToTextEntity):
                     _LOGGER.debug("Audio streaming complete: %d chunks, %d bytes total", chunk_count, total_bytes)
 
                     # Send close stream signal to finalize transcription
-                    await dg_connection.send_close_stream(ListenV1ControlMessage(type="CloseStream"))
+                    await dg_connection.send_control(ListenV1ControlMessage(type="CloseStream"))
                     _LOGGER.debug("Sent CloseStream signal to Deepgram")
 
                     # Wait for final transcript (with timeout)
